@@ -6,6 +6,7 @@ import logging
 # import json
 from app.services.supabase_client import supabase
 import httpx
+import uuid
 # import asyncio
 # import aiofiles
 
@@ -31,12 +32,14 @@ async def new_document(request: Request):
 
     file_path = record.get("storage_path")
     original_filename = record.get("file_name")
+    file_unique_id = record.get("id")
 
     if not file_path or not original_filename:
         return {"status": "missing required fields"}
 
     # Only push minimal job data
     job_data = {
+        "uuid":file_unique_id,
         "storage_path": file_path,
         "file_name": original_filename,
         "record": record

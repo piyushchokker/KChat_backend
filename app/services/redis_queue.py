@@ -11,6 +11,11 @@ r = redis.from_url(REDIS_URL, decode_responses=True)
 async def add_to_queue(metadata: dict):
     await r.rpush(QUEUE_NAME, json.dumps(metadata))
 
+# async def blpeek():
+#     _, item = await r.blpop(QUEUE_NAME)  # blocks efficiently
+#     await r.lpush(QUEUE_NAME, item)      # push it back immediately
+#     return json.loads(item)
+
 
 async def pop_from_queue():
     item = await r.blpop(QUEUE_NAME)
