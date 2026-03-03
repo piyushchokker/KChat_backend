@@ -54,7 +54,6 @@ def partition_pdf_sync(file: str):
     elements = partition_pdf(
         file=file,  # Use 'filename' for file paths in unstructured
         strategy="hi_res",
-        extract_images_in_pdf=True,
         infer_table_structure=True,
         extract_image_block_types=["Image"],
         extract_image_block_to_payload=True,
@@ -73,4 +72,4 @@ def create_chunks_by_title_sync(elements):
         combine_text_under_n_chars=500         
     )
     
-    return len(chunks), chunks
+    return chunks

@@ -61,4 +61,4 @@ async def process_job(job):
     #     await meta_f.write(json.dumps(metadata, ensure_ascii=False, indent=2))
 
     print(f"Processed: {filename}")
-    return response.content,{filename}
+    return response.content,filename

@@ -2,103 +2,80 @@
 from app.workers.document_worker import process_job
 from app.services.redis_queue import pop_from_queue
 from app.utils.chunking import partition_pdf_sync,create_chunks_by_title_sync
-from app.utils.ai_enhanced_docs import summarise_chunks
-from langchain_core.documents import Document
-from datetime import datetime
+from app.utils.ai_enhanced_docs import summarise_chunks_async
+# from langchain_core.documents import Document
+# from datetime import datetime
+import os
 from io import BytesIO
+from dotenv import load_dotenv
 import asyncio
+from app.services.text_extrator import extract_and_split_pdf
+from app.services.qdrant_client import VectorStoreService
+from langchain_openai import OpenAIEmbeddings
 
+load_dotenv()
 
+embeddings = OpenAIEmbeddings(
+    model="text-embedding-3-large",
+)
 
+qudrant_client=VectorStoreService(collection_name="my-collection",embedding_model="text-embedding-3-large")
 
 
 async def rag():
-    while True:
-        print("Waiting for job...")
+    print("RAG Worker Started...")
 
+    while True:
         try:
             job = await pop_from_queue()
-        except Exception :
-            print("check if redis server is running ")
+        except Exception as e:
+            print("❌ Redis connection failed:", str(e))
             break
-        # print("Job received:", job)
-        print("Job type:", type(job))
-
-        documents = []
 
         if job:
-            print("Processing job")
 
-            response, saved_filename = await process_job(job)
-            print("Processed job")
+            print("📦 Job received:", job)
 
-            partition =  partition_pdf_sync(file=BytesIO(response))
-            print("partition completed")
+            try:
+                # 1️⃣ Process & Save file
+                response,saved_filename = await process_job(job)
+                print("✅ File processed:", saved_filename)
 
-            chunks = create_chunks_by_title_sync(partition)
-            print("chunk by title complete")
+            except Exception as e:
+                print("❌ Error processing job:", str(e))
 
-            processed_chunks = await summarise_chunks(chunks)
-            print("summerisation complete")
+            try:
+                partition =  partition_pdf_sync(file=BytesIO(response))
+                print("partition completed")
+                print(f"No. of Partitions :{len(partition)}")
 
-            print(processed_chunks)
-
-            # documents = []
-
-            # base_metadata = {
-            #     **job["records"],  # DB metadata
-            #     "file_name": saved_filename,
-            #     "processed_at": datetime.utcnow().isoformat()
-            # }
-
-            # for idx, chunk in enumerate(processed_chunks):
-
-            #     # If your chunk is plain text
-            #     if isinstance(chunk, str):
-            #         page_content = chunk
-            #         chunk_meta = {}
-            #     else:
-            #         # If chunk returns dict
-            #         page_content = chunk["text"]
-            #         chunk_meta = chunk.get("metadata", {})
-
-            #     merged_metadata = {
-            #         **base_metadata,
-            #         **chunk_meta,
-            #         "chunk_id": idx
-            #     }
-
-            #     doc = Document(
-            #         page_content=page_content,
-            #         metadata=merged_metadata
-            #     )
-
-            #     documents.append(doc)
-
-            
-
-    
-            
+            except Exception :
+                print("Error in partition completed")
 
 
+            try :
+                chunks = create_chunks_by_title_sync(partition)
+                print(f"total chunks created : {len(chunks)}")
+
+            except Exception:
+                print("Error in chunk by title complete")
+                
+            processed_chunks = summarise_chunks_async(chunks,job["record"])
 
 
+        # try :
+        #     processed_chunks = summarise_chunks_async(chunks,job["record"])
+        #     print(f"processed chunks : {len(processed_chunks)}")
+        # except Exception :
+        #     print("Error in summerisation complete")
 
+        # try:
+        #     qudrant_client.add_documents(processed_chunks)
 
-
-
-            
-            
-
-            
-
-
-
-
-
-
-
-
+        # except Exception:
+        #     print("error while storing embedding ")
+        
+                
 
 
 

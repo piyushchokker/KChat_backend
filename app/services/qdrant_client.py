@@ -90,19 +90,73 @@ class VectorStoreService:
     # -------------------------
     # Public API
     # -------------------------
-
-    # 2. Add Retry Logic for network resilience
+# 2. Add Retry Logic for network resilience
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
-    def add_documents(self, documents: List[Document]):
-        if not documents:
-            logger.warning("add_documents called with an empty list.")
+    def add_documents(self, chunks: List[str], record: dict):
+        """
+        Adds chunked text documents with structured metadata (record format).
+        """
+
+        if not chunks:
+            logger.warning("add_documents called with empty chunks.")
             return
-            
-        logger.info(f"Adding {len(documents)} documents to {self.collection_name}...")
+
+        logger.info(f"Preparing {len(chunks)} chunks for collection '{self.collection_name}'")
+
         try:
-            # Note: For massive lists (> 5000 docs), you should implement batching/chunking here.
+            # ---- Fix keywords format if needed ----
+            keywords = record.get("keywords", [])
+            if isinstance(keywords, list) and len(keywords) == 1 and "," in keywords[0]:
+                keywords = [k.strip() for k in keywords[0].split(",")]
+
+            documents = []
+
+            for idx, chunk in enumerate(chunks):
+                metadata = {
+                    # ---- Identity ----
+                    "file_id": record["id"],
+                    "title": record["title"],
+                    "file_name": record["file_name"],
+                    "file_url": record["file_url"],
+                    "storage_path": record["storage_path"],
+
+                    # ---- Academic Context ----
+                    "course": record["course"],
+                    "school": record["school"],
+                    # "semester": record["semester"],
+
+                    # ---- Classification ----
+                    "document_type": record["document_type"],
+                    "issuing_authority": record["issuing_authority"],
+                    "keywords": keywords,
+
+                    # ---- Validity ----
+                    "effective_from": record["effective_from"],
+                    "effective_till": record["effective_till"],
+
+                    # ---- Audit ----
+                    "uploaded_by": record["uploaded_by"],
+                    "file_size": record["file_size"],
+                    "created_at": record["created_at"],
+                    "updated_at": record["updated_at"],
+
+                    # ---- Chunk Info ----
+                    "chunk_index": idx,
+                }
+
+                documents.append(
+                    Document(
+                        page_content=chunk,
+                        metadata=metadata
+                    )
+                )
+
+            # ---- Single Insert ----
+            logger.info("Uploading documents...")
             self.vector_store.add_documents(documents)
+
             logger.info("Documents added successfully.")
+
         except Exception as e:
             logger.error(f"Failed to add documents: {e}")
             raise
