@@ -1,4 +1,7 @@
-FROM python:3.10-slim
+FROM python:3.13-slim
+
+# Install uv
+RUN pip install --no-cache-dir uv
 
 # System dependencies for unstructured, tesseract, and PDF/image processing
 RUN apt-get update && apt-get install -y \
@@ -11,18 +14,17 @@ RUN apt-get update && apt-get install -y \
 # Set work directory
 WORKDIR /app
 
-# Copy requirements and install
+# Copy requirements
 COPY requirements.txt .
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+
+# Install Python dependencies using uv
+RUN uv pip install --system --no-cache -r requirements.txt
 
 # Copy the rest of the code
 COPY . .
-
-# Copy .env if you use it (optional, for local dev)
-# COPY .env .env
 
 # Expose FastAPI port
 EXPOSE 8000
 
 # Start FastAPI and worker
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 & python -m app.services.rag "]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 & python -m app.services.rag"]
