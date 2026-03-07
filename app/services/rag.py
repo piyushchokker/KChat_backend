@@ -41,30 +41,28 @@ async def rag():
                 response,saved_filename = await process_job(job)
                 print("✅ File processed:", saved_filename)
 
-            except Exception as e:
-                print("❌ Error processing job:", str(e))
 
-            try:
                 partition =  partition_pdf_sync(file=BytesIO(response))
                 print("partition completed")
                 print(f"No. of Partitions :{len(partition)}")
 
-            except Exception :
-                print("Error in partition completed")
 
-
-            try :
                 chunks = create_chunks_by_title_sync(partition)
                 print(f"total chunks created : {len(chunks)}")
 
-            except Exception:
-                print("Error in chunk by title complete")
+                processed_chunks = await summarise_chunks_async(chunks, job["record"])
+                print(f"total chunks created : {len(processed_chunks)}")
+
+                qudrant_client.add_documents(processed_chunks)
+                print("uploaded to qdrant")
+            except Exception as e:
+                print("error")
+                print(e)
                 
-            processed_chunks = summarise_chunks_async(chunks,job["record"])
+            
 
 
         # try :
-        #     processed_chunks = summarise_chunks_async(chunks,job["record"])
         #     print(f"processed chunks : {len(processed_chunks)}")
         # except Exception :
         #     print("Error in summerisation complete")

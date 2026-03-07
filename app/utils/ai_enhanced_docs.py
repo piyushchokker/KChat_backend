@@ -236,7 +236,7 @@ TEXT CONTENT:
         prompt_text += """
 YOUR TASK:
 Generate a comprehensive, searchable description that covers:
-1. Key facts, numbers, and data points
+1. all the facts, all numbers, all codes  and all the data points in the doc
 2. Main topics and concepts
 3. Questions this content could answer
 4. Visual content analysis

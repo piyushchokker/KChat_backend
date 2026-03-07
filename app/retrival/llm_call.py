@@ -4,6 +4,8 @@ from langchain_openai import ChatOpenAI
 import json
 from langchain_core.messages import HumanMessage
 from dotenv import load_dotenv
+from langchain_community.retrievers import BM25Retriever
+from langchain_classic.retrievers.ensemble import EnsembleRetriever
 
 load_dotenv()
 
@@ -22,15 +24,12 @@ qudrant_client=VectorStoreService(collection_name="my-collection",embedding_mode
 def generate_final_answer(query):
     """Generate final answer using multimodal content"""
 
-    chunks = qudrant_client.similarity_search(query)
-
-
-    print(chunks[0].page_content)
-    print(chunks[1].page_content)
-    print(chunks[2].page_content)
-    print(chunks[3].page_content)
-    print(chunks[4].page_content)
+    # chunks = qudrant_client.similarity_search(query)
     # chunks = retriever.invoke(query)
+
+    hybrid_retriver=EnsembleRetriever(
+        retrievers=[qudrant_client,BM25Retriever]
+        )
     
     try:
         # Initialize LLM (needs vision model for images)
@@ -63,7 +62,7 @@ CONTENT TO ANALYZE:
             prompt_text += "\n"
         
         prompt_text += """
-Please provide a clear, comprehensive answer using the text. If the documents don't contain sufficient information to answer the question, say "I don't have enough information to answer that question based on the provided documents."
+Please provide a clear, short answer using the text. If the documents don't contain sufficient information to answer the question, say "I don't have enough information to answer that question based on the provided documents."
 
 ANSWER:"""
 
@@ -94,5 +93,8 @@ ANSWER:"""
     
 
 while True:
+
+    
+
     inp=input(">")
     print(generate_final_answer(inp))
