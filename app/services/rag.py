@@ -9,7 +9,6 @@ import os
 from io import BytesIO
 from dotenv import load_dotenv
 import asyncio
-from app.services.text_extrator import extract_and_split_pdf
 from app.services.qdrant_client import VectorStoreService
 from langchain_openai import OpenAIEmbeddings
 

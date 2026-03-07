@@ -1,9 +1,7 @@
 import asyncio
 import os
 import sys
-import json
 import httpx
-import aiofiles
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from app.services.supabase_client import supabase
 
